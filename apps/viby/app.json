@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "Viby",
+    "slug": "viby",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./src/assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./src/assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.viby.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Viby needs access to your camera for profile photos.",
+        "NSPhotoLibraryUsageDescription": "Viby needs access to your photo library for profile photos."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/adaptive-icon.png",
+        "backgroundColor": "#000000"
+      },
+      "package": "com.viby.app",
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ]
+    },
+    "web": {
+      "favicon": "./src/assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "viby-mobile-app"
+      }
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": true,
+    "importHelpers": true,
+    "isolatedModules": true,
+    "lib": ["es2022"],
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noEmitOnError": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "es2022",
+    "paths": {
+      "@viby/modules/auth": ["libs/modules/auth/src/index.ts"],
+      "@viby/modules/discovery": ["libs/modules/discovery/src/index.ts"],
+      "@viby/modules/realtime": ["libs/modules/realtime/src/index.ts"],
+      "@viby/modules/game": ["libs/modules/game/src/index.ts"],
+      "@viby/modules/chat": ["libs/modules/chat/src/index.ts"],
+      "@viby/modules/matchmaking": ["libs/modules/matchmaking/src/index.ts"],
+      "@viby/modules/profile": ["libs/modules/profile/src/index.ts"],
+      "@viby/shared/design-system": ["libs/shared/design-system/src/index.ts"],
+      "@viby/shared/networking": ["libs/shared/networking/src/index.ts"],
+      "@viby/shared/storage": ["libs/shared/storage/src/index.ts"],
+      "@viby/shared/utils": ["libs/shared/utils/src/index.ts"],
+      "@viby/shared/types": ["libs/shared/types/src/index.ts"],
+      "@viby/shared/config": ["libs/shared/config/src/index.ts"]
+    }
+  }
+}
