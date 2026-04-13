@@ -5,14 +5,18 @@
  * - Auth flow (for unauthenticated users)
  * - Main app (for authenticated users)
  * - Modal screens (Match, Game, Chat)
+ * 
+ * Uses lazy loading with Suspense for code splitting.
  */
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { RootStackParamList } from './types';
 import { AuthStackNavigator } from './AuthStackNavigator';
 import { MainTabNavigator } from './MainTabNavigator';
 import { MatchScreen, GameScreen, ChatScreen } from '../../screens/modals';
+import { LegalDocumentScreen } from '../../screens/legal/LegalDocumentScreen';
+import { LoadingFallback } from '../components/LoadingFallback';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -29,35 +33,76 @@ export function RootStackNavigator({ isAuthenticated }: RootStackNavigatorProps)
     >
       {!isAuthenticated ? (
         // Auth flow for unauthenticated users
-        <Stack.Screen name="Auth" component={AuthStackNavigator} />
+        <>
+          <Stack.Screen name="Auth" component={AuthStackNavigator} />
+          
+          {/* Legal documents accessible during auth flow */}
+          <Stack.Screen
+            name="LegalDocument"
+            component={LegalDocumentScreen}
+            options={{
+              presentation: 'modal',
+              headerShown: true,
+              headerTitle: '',
+              headerBackTitle: 'Back',
+            }}
+          />
+        </>
       ) : (
         // Main app for authenticated users
         <>
           <Stack.Screen name="Main" component={MainTabNavigator} />
           
-          {/* Modal screens */}
+          {/* Modal screens with lazy loading */}
           <Stack.Screen
             name="Match"
-            component={MatchScreen}
             options={{
               presentation: 'modal',
               animation: 'slide_from_bottom',
             }}
-          />
+          >
+            {(props) => (
+              <Suspense fallback={<LoadingFallback />}>
+                <MatchScreen {...props} />
+              </Suspense>
+            )}
+          </Stack.Screen>
           <Stack.Screen
             name="Game"
-            component={GameScreen}
             options={{
               presentation: 'modal',
               animation: 'slide_from_bottom',
             }}
-          />
+          >
+            {(props) => (
+              <Suspense fallback={<LoadingFallback />}>
+                <GameScreen {...props} />
+              </Suspense>
+            )}
+          </Stack.Screen>
           <Stack.Screen
             name="Chat"
-            component={ChatScreen}
             options={{
               presentation: 'modal',
               animation: 'slide_from_bottom',
+            }}
+          >
+            {(props) => (
+              <Suspense fallback={<LoadingFallback />}>
+                <ChatScreen {...props} />
+              </Suspense>
+            )}
+          </Stack.Screen>
+          
+          {/* Legal documents accessible from settings */}
+          <Stack.Screen
+            name="LegalDocument"
+            component={LegalDocumentScreen}
+            options={{
+              presentation: 'modal',
+              headerShown: true,
+              headerTitle: '',
+              headerBackTitle: 'Back',
             }}
           />
         </>

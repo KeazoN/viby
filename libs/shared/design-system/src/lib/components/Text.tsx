@@ -23,6 +23,16 @@ export interface TextProps extends RNTextProps {
    * Text content
    */
   children: React.ReactNode;
+  /**
+   * Allow dynamic text sizing based on system font scale
+   * @default true
+   */
+  allowFontScaling?: boolean;
+  /**
+   * Maximum font scale multiplier
+   * @default 2.0
+   */
+  maxFontSizeMultiplier?: number;
 }
 
 export function Text({
@@ -32,6 +42,8 @@ export function Text({
   align = 'left',
   style,
   children,
+  allowFontScaling = true,
+  maxFontSizeMultiplier = 2.0,
   ...props
 }: TextProps) {
   const variantStyle = getVariantStyle(variant);
@@ -42,6 +54,8 @@ export function Text({
   return (
     <RNText
       style={[styles.base, variantStyle, colorStyle, weightStyle, alignStyle, style]}
+      allowFontScaling={allowFontScaling}
+      maxFontSizeMultiplier={maxFontSizeMultiplier}
       {...props}
     >
       {children}

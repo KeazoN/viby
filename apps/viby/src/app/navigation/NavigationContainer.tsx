@@ -27,16 +27,21 @@ import {
   restoreNavigationState, 
   clearNavigationState 
 } from './navigation-persistence';
+import { analyticsTracker } from '@viby/shared/analytics';
 
 interface NavigationContainerProps {
   isAuthenticated: boolean;
+  navigationRef?: React.RefObject<NavigationContainerRef<RootStackParamList>>;
 }
 
-export function NavigationContainer({ isAuthenticated }: NavigationContainerProps) {
-  const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
+export function NavigationContainer({ isAuthenticated, navigationRef: externalRef }: NavigationContainerProps) {
+  const internalRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
+  const navigationRef = externalRef || internalRef;
   const [isReady, setIsReady] = useState(false);
   const [initialState, setInitialState] = useState<NavigationState | undefined>();
   const appState = useRef<AppStateStatus>(AppState.currentState);
+  const routeNameRef = useRef<string>();
+  const previousRouteNameRef = useRef<string>();
 
   // Restore navigation state on mount (only for authenticated users)
   useEffect(() => {
@@ -116,6 +121,34 @@ export function NavigationContainer({ isAuthenticated }: NavigationContainerProp
 
     // Get the current route
     const currentRoute = state.routes[state.index];
+    const currentRouteName = currentRoute.name;
+    
+    // Track screen view for analytics
+    if (previousRouteNameRef.current !== currentRouteName) {
+      // Track screen transition performance
+      if (previousRouteNameRef.current) {
+        analyticsTracker.performance.completeScreenTransition(
+          previousRouteNameRef.current,
+          currentRouteName
+        );
+      }
+      
+      // Track screen view
+      analyticsTracker.engagement.trackScreenView(currentRouteName, {
+        previous_screen: previousRouteNameRef.current || 'none',
+      });
+      
+      // Start tracking next transition
+      if (routeNameRef.current) {
+        analyticsTracker.performance.startScreenTransition(
+          routeNameRef.current,
+          currentRouteName
+        );
+      }
+      
+      previousRouteNameRef.current = routeNameRef.current;
+      routeNameRef.current = currentRouteName;
+    }
     
     // Check if navigating to a protected screen while unauthenticated
     if (!isAuthenticated && isProtectedScreen(currentRoute.name)) {

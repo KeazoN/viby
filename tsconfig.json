@@ -8,6 +8,12 @@
     },
     {
       "path": "./apps/viby"
+    },
+    {
+      "path": "./libs/shared/notifications"
+    },
+    {
+      "path": "./apps/viby-backend"
     }
   ]
 }

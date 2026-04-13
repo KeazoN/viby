@@ -1,5 +1,7 @@
 import { httpClient } from '@viby/shared/networking';
 import { socketManager } from '@viby/modules/realtime';
+import { analyticsTracker } from '@viby/shared/analytics';
+import { debounce, validateAndFilterMessage } from '@viby/shared/utils';
 import type {
   Message,
   SendMessageResponse,
@@ -20,6 +22,7 @@ import type {
  */
 export class ChatService {
   private eventHandlers: Map<string, (data: any) => void> = new Map();
+  private debouncedTypingIndicators: Map<string, (isTyping: boolean) => void> = new Map();
 
   /**
    * Subscribe to chat events from WebSocket for a specific room
@@ -98,18 +101,37 @@ export class ChatService {
    * 
    * Send messages via API
    * Support sending text messages up to 500 characters
+   * Implement content moderation for chat messages to prevent abuse (Requirement 24.5)
    */
   async sendMessage(roomId: string, content: string): Promise<Message> {
     try {
-      // Validate message length
-      if (content.length > 500) {
-        throw new Error('Message content exceeds 500 characters');
+      // Validate and filter message content
+      const validation = validateAndFilterMessage(content);
+      
+      if (!validation.isValid) {
+        throw new Error(validation.reason || 'Invalid message');
       }
+
+      // Use filtered content (profanity replaced with asterisks)
+      const filteredContent = validation.filtered;
 
       const response = await httpClient.post<SendMessageResponse>(
         `/chat/${roomId}/messages`,
-        { content }
+        { content: filteredContent }
       );
+      
+      // Track message sent
+      analyticsTracker.engagement.trackMessageSent(roomId, filteredContent.length);
+      
+      // Track if profanity was filtered
+      if (validation.containsProfanity) {
+        analyticsTracker.engagement.trackEvent('message_profanity_filtered', {
+          roomId,
+          originalLength: content.length,
+          filteredLength: filteredContent.length,
+        });
+      }
+      
       return response.message;
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -155,10 +177,24 @@ export class ChatService {
    * @param isTyping - Whether the user is currently typing
    * 
    * Display typing indicators when the other user is typing
+   * 
+   * Note: This method is debounced per room to avoid excessive WebSocket messages.
+   * The debounce delay is 300ms, meaning typing indicators will only be sent
+   * after the user stops typing for 300ms.
    */
   sendTypingIndicator(roomId: string, isTyping: boolean = true): void {
     try {
-      socketManager.emit('chat:typing', { roomId, isTyping });
+      // Get or create debounced function for this room
+      if (!this.debouncedTypingIndicators.has(roomId)) {
+        const debouncedFn = debounce((typing: boolean) => {
+          socketManager.emit('chat:typing', { roomId, isTyping: typing });
+        }, 300);
+        this.debouncedTypingIndicators.set(roomId, debouncedFn);
+      }
+
+      // Call the debounced function
+      const debouncedFn = this.debouncedTypingIndicators.get(roomId)!;
+      debouncedFn(isTyping);
     } catch (error) {
       console.error('Failed to send typing indicator:', error);
       // Don't throw - typing indicators are non-critical

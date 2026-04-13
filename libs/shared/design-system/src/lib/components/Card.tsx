@@ -36,6 +36,14 @@ export interface CardProps {
    * Accessibility label
    */
   accessibilityLabel?: string;
+  /**
+   * Accessibility hint (describes what will happen when the card is pressed)
+   */
+  accessibilityHint?: string;
+  /**
+   * Accessibility role override
+   */
+  accessibilityRole?: 'button' | 'none';
 }
 
 export function Card({
@@ -46,18 +54,30 @@ export function Card({
   padding = 4,
   style,
   accessibilityLabel,
+  accessibilityHint,
+  accessibilityRole,
 }: CardProps) {
   const Component = onPress ? TouchableOpacity : View;
 
   const variantStyle = getVariantStyle(variant, glowColor);
   const paddingStyle = { padding: spacing[padding] };
 
+  const accessibilityProps = onPress
+    ? {
+        accessibilityRole: accessibilityRole || ('button' as const),
+        accessibilityLabel,
+        accessibilityHint,
+      }
+    : {
+        accessibilityRole: accessibilityRole,
+        accessibilityLabel,
+      };
+
   return (
     <Component
       onPress={onPress}
       style={[styles.card, paddingStyle, variantStyle, style]}
-      accessibilityRole={onPress ? 'button' : undefined}
-      accessibilityLabel={accessibilityLabel}
+      {...accessibilityProps}
       activeOpacity={onPress ? 0.7 : 1}
     >
       {children}

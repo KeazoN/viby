@@ -4,9 +4,11 @@ import type {
   AxiosError,
 } from 'axios';
 import type { RequestLog, ResponseLog, ErrorLog } from '../types';
+import { ErrorTracker, addSentryBreadcrumb } from '@viby/shared/monitoring';
 
 /**
  * Logging interceptor that logs requests, responses, and errors
+ * Integrates with Sentry for error tracking
  */
 export class LoggingInterceptor {
   private requestTimestamps = new Map<string, number>();
@@ -34,6 +36,13 @@ export class LoggingInterceptor {
     };
 
     console.log('[HTTP Request]', log);
+
+    // Add breadcrumb to Sentry
+    addSentryBreadcrumb(
+      `${log.method} ${log.url}`,
+      'http',
+      'info'
+    );
 
     return config;
   }
@@ -95,6 +104,16 @@ export class LoggingInterceptor {
     };
 
     console.error('[HTTP Error]', log);
+
+    // Track API errors in Sentry (only for 5xx errors and network errors)
+    if (!error.response || (error.response.status >= 500 && error.response.status < 600)) {
+      ErrorTracker.trackApiError(error as Error, {
+        url: log.url,
+        method: log.method,
+        statusCode: log.status,
+        responseTime: duration,
+      });
+    }
   }
 
   /**

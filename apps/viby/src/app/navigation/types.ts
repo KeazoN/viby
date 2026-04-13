@@ -18,6 +18,8 @@ export type RootStackParamList = {
   Match: { matchId: string };
   Game: { roomId: string };
   Chat: { roomId: string; matchId?: string };
+  // Legal documents
+  LegalDocument: { documentType: 'privacy-policy' | 'terms-of-service' };
 };
 
 /**

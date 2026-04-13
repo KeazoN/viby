@@ -14,3 +14,11 @@ export type { InputProps } from './Input';
 
 export { Card } from './Card';
 export type { CardProps } from './Card';
+
+export { OptimizedImage } from './OptimizedImage';
+export type { OptimizedImageProps } from './OptimizedImage';
+
+// Export accessibility utilities
+export * from '../utils/accessibility';
+export * from '../hooks/use-accessibility';
+export * from '../hooks/use-dynamic-text-size';

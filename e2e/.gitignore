@@ -1,0 +1,17 @@
+# Detox artifacts
+artifacts/
+
+# Test results
+*.log
+*.xml
+
+# Coverage
+coverage/
+
+# Temporary files
+*.tmp
+*.temp
+
+# OS files
+.DS_Store
+Thumbs.db

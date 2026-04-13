@@ -34,6 +34,10 @@ export interface InputProps extends Omit<TextInputProps, 'style'> {
    * Container style
    */
   containerStyle?: ViewStyle;
+  /**
+   * Accessibility hint (describes what the input is for)
+   */
+  accessibilityHint?: string;
 }
 
 export function Input({
@@ -43,6 +47,7 @@ export function Input({
   state = 'default',
   fullWidth = false,
   containerStyle,
+  accessibilityHint,
   ...props
 }: InputProps) {
   const [isFocused, setIsFocused] = useState(false);
@@ -76,7 +81,8 @@ export function Input({
           placeholderTextColor={colors.text.tertiary}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          accessibilityLabel={label}
+          accessibilityLabel={label || props.placeholder}
+          accessibilityHint={accessibilityHint}
           accessibilityState={{
             disabled: props.editable === false,
           }}

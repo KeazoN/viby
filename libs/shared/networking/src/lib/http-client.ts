@@ -5,7 +5,13 @@ import {
   RetryInterceptor,
   LoggingInterceptor,
 } from './interceptors';
+import {
+  analyticsRequestInterceptor,
+  analyticsResponseInterceptor,
+  analyticsErrorInterceptor,
+} from './interceptors/analytics-interceptor';
 import type { HttpClientConfig } from './types';
+import { initializeCertificatePinning } from './secure-fetch';
 
 /**
  * HttpClient provides a configured Axios instance with:
@@ -27,6 +33,9 @@ export class HttpClient {
       maxRetries = 3,
       enableLogging = __DEV__,
     } = config;
+
+    // Initialize certificate pinning validation
+    initializeCertificatePinning();
 
     // Create Axios instance
     this.client = axios.create({
@@ -51,13 +60,19 @@ export class HttpClient {
   private setupInterceptors(): void {
     // Request interceptors (executed in order)
     
-    // 1. Logging interceptor - log outgoing requests
+    // 1. Analytics interceptor - track request start time
+    this.client.interceptors.request.use(
+      analyticsRequestInterceptor,
+      (error) => Promise.reject(error)
+    );
+    
+    // 2. Logging interceptor - log outgoing requests
     this.client.interceptors.request.use(
       (config) => this.loggingInterceptor.logRequest(config),
       (error) => Promise.reject(error)
     );
 
-    // 2. Auth interceptor - inject access token
+    // 3. Auth interceptor - inject access token
     this.client.interceptors.request.use(
       authRequestInterceptor,
       (error) => Promise.reject(error)
@@ -74,13 +89,22 @@ export class HttpClient {
       }
     );
 
-    // 2. Token refresh interceptor - handle 401 errors
+    // 2. Analytics interceptor - track response time and errors
+    this.client.interceptors.response.use(
+      analyticsResponseInterceptor,
+      (error) => {
+        analyticsErrorInterceptor(error);
+        return Promise.reject(error);
+      }
+    );
+
+    // 3. Token refresh interceptor - handle 401 errors
     this.client.interceptors.response.use(
       (response) => response,
       (error) => this.tokenRefreshInterceptor.handleError(error)
     );
 
-    // 3. Retry interceptor - handle network/5xx errors
+    // 4. Retry interceptor - handle network/5xx errors
     this.client.interceptors.response.use(
       (response) => response,
       (error) => this.retryInterceptor.handleError(error)

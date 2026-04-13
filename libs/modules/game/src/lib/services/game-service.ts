@@ -1,5 +1,6 @@
-import { httpClient } from '@viby/shared/networking';
+import { httpClient, signedPost } from '@viby/shared/networking';
 import { socketManager } from '@viby/modules/realtime';
+import { analyticsTracker } from '@viby/shared/analytics';
 import type {
   GameSession,
   Round,
@@ -24,6 +25,7 @@ import type {
  */
 export class GameService {
   private eventHandlers: Map<string, (data: any) => void> = new Map();
+  private gameStartTimes: Map<string, number> = new Map();
 
   /**
    * Subscribe to game events from WebSocket for a specific room
@@ -34,6 +36,15 @@ export class GameService {
     // Handler for game:started event
     const gameStartedHandler = (payload: GameStartedPayload) => {
       console.log('Game started:', payload.game);
+      
+      // Track game start time
+      this.gameStartTimes.set(payload.game.roomId, Date.now());
+      
+      // Track game start
+      analyticsTracker.engagement.trackGameStart(
+        payload.game.roomId,
+        payload.game.opponentId
+      );
     };
 
     // Handler for round:started event
@@ -61,6 +72,27 @@ export class GameService {
     const gameEndedHandler = (payload: GameEndedPayload) => {
       if (payload.roomId === roomId) {
         console.log('Game ended. Winner:', payload.winner, 'Final scores:', payload.finalScores);
+        
+        // Calculate game duration
+        const startTime = this.gameStartTimes.get(roomId);
+        const duration = startTime ? Date.now() - startTime : 0;
+        
+        // Determine winner
+        const myScore = payload.finalScores.me || 0;
+        const opponentScore = payload.finalScores.opponent || 0;
+        const winner = myScore > opponentScore ? 'me' : myScore < opponentScore ? 'opponent' : 'tie';
+        
+        // Track game complete
+        analyticsTracker.engagement.trackGameComplete(
+          roomId,
+          duration,
+          myScore,
+          opponentScore,
+          winner
+        );
+        
+        // Clean up start time
+        this.gameStartTimes.delete(roomId);
       }
     };
 
@@ -127,7 +159,7 @@ export class GameService {
    */
   async submitAnswer(roomId: string, roundId: string, answer: string): Promise<SubmitAnswerResponse> {
     try {
-      const response = await httpClient.post<SubmitAnswerResponse>(
+      const response = await signedPost<SubmitAnswerResponse>(
         `/game/${roomId}/answer`,
         { roomId, roundId, answer } as SubmitAnswerRequest
       );
@@ -145,13 +177,31 @@ export class GameService {
    */
   async leaveGame(roomId: string): Promise<LeaveGameResponse> {
     try {
-      const response = await httpClient.post<LeaveGameResponse>(
+      const response = await signedPost<LeaveGameResponse>(
         `/game/${roomId}/leave`,
         { roomId }
       );
       return response;
     } catch (error) {
       console.error('Failed to leave game:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Request current game state from the server
+   * Used for state recovery after WebSocket reconnection
+   * @param roomId - The room ID to get state for
+   * @returns Promise resolving to the current game session and round
+   */
+  async getGameState(roomId: string): Promise<{ game: GameSession; currentRound: Round | null }> {
+    try {
+      const response = await httpClient.get<{ game: GameSession; currentRound: Round | null }>(
+        `/game/${roomId}/state`
+      );
+      return response;
+    } catch (error) {
+      console.error('Failed to get game state:', error);
       throw error;
     }
   }

@@ -6,3 +6,4 @@
 
 export * from './use-matchmaking';
 export * from './use-match-websocket';
+export * from './use-rate-limited-match-request';

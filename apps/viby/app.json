@@ -30,14 +30,30 @@
       "package": "com.viby.app",
       "permissions": [
         "INTERNET",
-        "ACCESS_NETWORK_STATE"
+        "ACCESS_NETWORK_STATE",
+        "POST_NOTIFICATIONS"
       ]
     },
     "web": {
       "favicon": "./src/assets/favicon.png"
     },
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./src/assets/notification-icon.png",
+          "color": "#FF6B6B",
+          "sounds": ["./src/assets/notification-sound.wav"]
+        }
+      ],
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "viby",
+          "project": "viby-mobile"
+        }
+      ]
     ],
     "extra": {
       "eas": {

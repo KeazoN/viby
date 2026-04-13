@@ -1,5 +1,6 @@
-import { httpClient } from '@viby/shared/networking';
+import { signedPost } from '@viby/shared/networking';
 import { socketManager } from '@viby/modules/realtime';
+import { analyticsTracker } from '@viby/shared/analytics';
 import type {
   Match,
   RequestMatchRequest,
@@ -30,10 +31,14 @@ export class MatchmakingService {
    */
   async requestMatch(trackId: string): Promise<Match> {
     try {
-      const response = await httpClient.post<RequestMatchResponse>(
+      const response = await signedPost<RequestMatchResponse>(
         '/matchmaking/request',
         { trackId } as RequestMatchRequest
       );
+      
+      // Track match request
+      analyticsTracker.engagement.trackMatchRequest(trackId, response.match.listenerCount || 0);
+      
       return response.match;
     } catch (error) {
       console.error('Failed to request match:', error);
@@ -48,9 +53,13 @@ export class MatchmakingService {
    */
   async acceptMatch(matchId: string): Promise<AcceptMatchResponse> {
     try {
-      const response = await httpClient.post<AcceptMatchResponse>(
+      const response = await signedPost<AcceptMatchResponse>(
         `/matchmaking/${matchId}/accept`
       );
+      
+      // Track match accept
+      analyticsTracker.engagement.trackMatchAccept(matchId, response.match.opponentId);
+      
       return response;
     } catch (error) {
       console.error('Failed to accept match:', error);
@@ -64,7 +73,10 @@ export class MatchmakingService {
    */
   async declineMatch(matchId: string): Promise<void> {
     try {
-      await httpClient.post(`/matchmaking/${matchId}/decline`);
+      await signedPost(`/matchmaking/${matchId}/decline`);
+      
+      // Track match decline
+      analyticsTracker.engagement.trackMatchDecline(matchId, 'user_declined');
     } catch (error) {
       console.error('Failed to decline match:', error);
       throw error;

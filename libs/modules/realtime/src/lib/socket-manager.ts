@@ -2,6 +2,8 @@ import { io, Socket } from 'socket.io-client';
 import { EventBus } from './event-bus';
 import { ReconnectionStrategy } from './reconnection-strategy';
 import { useRealtimeStore } from './stores/realtime-store';
+import { ErrorTracker } from '@viby/shared/monitoring';
+import { analyticsService, AnalyticsEvent, analyticsTracker } from '@viby/shared/analytics';
 import type { ConnectionStatus } from './stores/realtime-store';
 
 type EventHandler = (data: any) => void;
@@ -17,6 +19,7 @@ type EventHandler = (data: any) => void;
  * - Automatic reconnection with exponential backoff
  * - Heartbeat for latency measurement
  * - Subscription restoration on reconnect
+ * - Error tracking with Sentry
  * 
  * Implements requirements 8.1-8.10
  */
@@ -29,6 +32,7 @@ export class SocketManager {
   private lastPingTime: number = 0;
   private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
   private baseUrl: string;
+  private connectionStartTime: number = 0;
 
   constructor(baseUrl?: string) {
     this.eventBus = new EventBus();
@@ -48,6 +52,7 @@ export class SocketManager {
     }
 
     this.isIntentionalDisconnect = false;
+    this.connectionStartTime = Date.now();
 
     this.socket = io(this.baseUrl, {
       auth: { token },
@@ -65,12 +70,23 @@ export class SocketManager {
         this.resubscribeAll();
         this.processMessageQueue();
         this.eventBus.emit('connection:status', { status: 'connected' });
+        
+        // Track WebSocket connection with analytics tracker
+        analyticsService.trackEvent(AnalyticsEvent.WEBSOCKET_CONNECTED, {
+          timestamp: Date.now(),
+          reconnect_attempts: this.reconnectionStrategy.getAttempts(),
+        });
+        
         resolve();
       });
 
       this.socket!.once('connect_error', (error: Error) => {
         useRealtimeStore.getState().setConnectionStatus('disconnected');
         this.eventBus.emit('connection:status', { status: 'disconnected', error });
+        
+        // Track WebSocket connection error with analytics tracker
+        analyticsTracker.error.trackWebSocketError('connect_error', error.message);
+        
         reject(error);
       });
     });
@@ -207,14 +223,31 @@ export class SocketManager {
     if (!this.socket) return;
 
     this.socket.on('disconnect', (reason: string) => {
+      const connectionDuration = Date.now() - this.connectionStartTime;
       useRealtimeStore.getState().setConnectionStatus('disconnected');
       this.eventBus.emit('connection:status', { status: 'disconnected', reason });
       this.stopHeartbeat();
 
+      // Track disconnection with analytics tracker
+      analyticsTracker.error.trackWebSocketDisconnection(reason, connectionDuration);
+
       if (!this.isIntentionalDisconnect) {
+        // Track unexpected disconnection
+        ErrorTracker.trackWebSocketError(
+          new Error(`WebSocket disconnected: ${reason}`),
+          {
+            connectionStatus: 'disconnected',
+            reconnectAttempts: this.reconnectionStrategy.getAttempts(),
+          }
+        );
+
         // Attempt reconnection
         this.reconnect().catch((error) => {
           console.error('Reconnection failed:', error);
+          ErrorTracker.trackWebSocketError(error as Error, {
+            connectionStatus: 'failed',
+            reconnectAttempts: this.reconnectionStrategy.getAttempts(),
+          });
         });
       }
     });
@@ -223,12 +256,23 @@ export class SocketManager {
       console.error('Connection error:', error);
       useRealtimeStore.getState().setConnectionStatus('disconnected');
       this.eventBus.emit('connection:error', { error });
+
+      // Track connection errors with analytics tracker
+      analyticsTracker.error.trackWebSocketError('connect_error', error.message);
+      
+      ErrorTracker.trackWebSocketError(error, {
+        connectionStatus: 'error',
+        reconnectAttempts: this.reconnectionStrategy.getAttempts(),
+      });
     });
 
     // Heartbeat for latency measurement
     this.socket.on('pong', () => {
       const latency = Date.now() - this.lastPingTime;
       useRealtimeStore.getState().setLatency(latency);
+
+      // Track WebSocket latency with analytics tracker
+      analyticsTracker.performance.trackWebSocketLatency(latency);
 
       if (latency > 100) {
         console.warn(`High WebSocket latency: ${latency}ms`);

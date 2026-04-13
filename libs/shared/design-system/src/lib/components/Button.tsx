@@ -44,6 +44,10 @@ export interface ButtonProps {
    * Accessibility label
    */
   accessibilityLabel?: string;
+  /**
+   * Accessibility hint (describes what will happen when the button is pressed)
+   */
+  accessibilityHint?: string;
 }
 
 export function Button({
@@ -55,6 +59,7 @@ export function Button({
   loading = false,
   fullWidth = false,
   accessibilityLabel,
+  accessibilityHint,
 }: ButtonProps) {
   const sizeStyles = getSizeStyles(size);
   const isDisabled = disabled || loading;
@@ -65,6 +70,7 @@ export function Button({
         <ActivityIndicator
           color={variant === 'ghost' ? colors.accent.cyan : colors.text.primary}
           size="small"
+          accessibilityLabel="Loading"
         />
       ) : (
         <Text
@@ -74,6 +80,8 @@ export function Button({
             variant === 'ghost' && styles.ghostText,
             isDisabled && styles.disabledText,
           ]}
+          allowFontScaling={true}
+          maxFontSizeMultiplier={1.5}
         >
           {children}
         </Text>
@@ -89,7 +97,8 @@ export function Button({
         style={[styles.container, fullWidth && styles.fullWidth]}
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel || (typeof children === 'string' ? children : undefined)}
-        accessibilityState={{ disabled: isDisabled }}
+        accessibilityHint={accessibilityHint}
+        accessibilityState={{ disabled: isDisabled, busy: loading }}
       >
         <LinearGradient
           colors={isDisabled ? [colors.background.tertiary, colors.background.tertiary] : colors.gradient.primary}
@@ -117,7 +126,8 @@ export function Button({
         ]}
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel || (typeof children === 'string' ? children : undefined)}
-        accessibilityState={{ disabled: isDisabled }}
+        accessibilityHint={accessibilityHint}
+        accessibilityState={{ disabled: isDisabled, busy: loading }}
       >
         {buttonContent}
       </TouchableOpacity>
@@ -137,7 +147,8 @@ export function Button({
       ]}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel || (typeof children === 'string' ? children : undefined)}
-      accessibilityState={{ disabled: isDisabled }}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
     >
       {buttonContent}
     </TouchableOpacity>

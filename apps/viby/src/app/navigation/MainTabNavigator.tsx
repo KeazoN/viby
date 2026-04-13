@@ -5,9 +5,11 @@
  * - Discovery: See who's listening to the same music
  * - Profile: View and edit user profile
  * - Settings: App settings and preferences
+ * 
+ * Uses lazy loading with Suspense for code splitting.
  */
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { MainTabParamList } from './types';
 import {
@@ -15,6 +17,7 @@ import {
   ProfileScreen,
   SettingsScreen,
 } from '../../screens/main';
+import { LoadingFallback } from '../components/LoadingFallback';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -33,28 +36,45 @@ export function MainTabNavigator() {
     >
       <Tab.Screen
         name="Discovery"
-        component={DiscoveryScreen}
         options={{
           tabBarLabel: 'Discovery',
           tabBarIcon: ({ color, size }) => null, // Will add icons later
+          tabBarTestID: 'discovery-tab',
         }}
-      />
+      >
+        {(props) => (
+          <Suspense fallback={<LoadingFallback />}>
+            <DiscoveryScreen {...props} />
+          </Suspense>
+        )}
+      </Tab.Screen>
       <Tab.Screen
         name="Profile"
-        component={ProfileScreen}
         options={{
           tabBarLabel: 'Profile',
           tabBarIcon: ({ color, size }) => null,
+          tabBarTestID: 'profile-tab',
         }}
-      />
+      >
+        {(props) => (
+          <Suspense fallback={<LoadingFallback />}>
+            <ProfileScreen {...props} />
+          </Suspense>
+        )}
+      </Tab.Screen>
       <Tab.Screen
         name="Settings"
-        component={SettingsScreen}
         options={{
           tabBarLabel: 'Settings',
           tabBarIcon: ({ color, size }) => null,
         }}
-      />
+      >
+        {(props) => (
+          <Suspense fallback={<LoadingFallback />}>
+            <SettingsScreen {...props} />
+          </Suspense>
+        )}
+      </Tab.Screen>
     </Tab.Navigator>
   );
 }

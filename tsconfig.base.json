@@ -29,6 +29,10 @@
       "@viby/shared/networking": ["libs/shared/networking/src/index.ts"],
       "@viby/shared/storage": ["libs/shared/storage/src/index.ts"],
       "@viby/shared/query": ["libs/shared/query/src/index.ts"],
+      "@viby/shared/lifecycle": ["libs/shared/lifecycle/src/index.ts"],
+      "@viby/shared/notifications": ["libs/shared/notifications/src/index.ts"],
+      "@viby/shared/monitoring": ["libs/shared/monitoring/src/index.ts"],
+      "@viby/shared/analytics": ["libs/shared/analytics/src/index.ts"],
       "@viby/shared/utils": ["libs/shared/utils/src/index.ts"],
       "@viby/shared/types": ["libs/shared/types/src/index.ts"],
       "@viby/shared/config": ["libs/shared/config/src/index.ts"]

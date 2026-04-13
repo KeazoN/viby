@@ -19,7 +19,7 @@ export function WelcomeScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} testID="welcome-screen">
       {/* Logo Section */}
       <View style={styles.logoSection}>
         <Text variant="h1" align="center" style={styles.logo}>
@@ -41,6 +41,7 @@ export function WelcomeScreen() {
           size="lg"
           onPress={handleSpotifyLogin}
           fullWidth
+          testID="button-login-spotify"
           accessibilityLabel="Login with Spotify"
         >
           Login with Spotify
@@ -52,6 +53,7 @@ export function WelcomeScreen() {
             size="lg"
             onPress={handleDeezerLogin}
             fullWidth
+            testID="button-login-deezer"
             accessibilityLabel="Login with Deezer"
           >
             Login with Deezer
